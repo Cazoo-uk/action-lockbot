@@ -11,7 +11,7 @@ inputs:
   lockbot_auth_token:
     description: "Lockbot Auth Token"
     required: true
-  lockbot_api_owner: 
+  lockbot_api_owner:
     description: "Slack member ID"
 
 outputs:
@@ -67,4 +67,3 @@ runs:
             echo "::set-output name=isLocked::true"
         fi
         exit 1
-        
