@@ -67,3 +67,4 @@ runs:
             echo "::set-output name=isLocked::true"
         fi
         exit 1
+        
