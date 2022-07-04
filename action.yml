@@ -68,4 +68,3 @@ runs:
             echo "Environment is locked to another branch. Not going to deploy."
             echo "::set-output name=isLocked::true"
         fi
-        exit 1
