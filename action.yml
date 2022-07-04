@@ -13,6 +13,7 @@ inputs:
     required: true
   lockbot_api_owner:
     description: "Slack member ID"
+    required: true
 
 outputs:
   isLocked:
