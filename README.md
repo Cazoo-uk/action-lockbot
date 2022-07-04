@@ -1,4 +1,3 @@
 # LockBot GitHub action
 
-This is the reusable action that should be used in order to lock an environment.
-
+Essentially a reusable action on top of [lockbot](https://github.com/connorads/lockbot) that can be used to lock an environment.
