@@ -2,7 +2,7 @@
 
 Essentially a reusable action on top of [lockbot](https://github.com/connorads/lockbot) that can be used to lock an environment.
 
-### Defaults
+### Parameters
 | Parameters | Required | Description |
 | :--- | :-: | :- |
 | env | ✅ | Environment to which we're deploying to |
