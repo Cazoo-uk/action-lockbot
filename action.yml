@@ -55,17 +55,17 @@ runs:
             RESPONSE_CODE=$(curl --silent --output /dev/stderr --write-out "%{http_code}" "$LOCKBOT_ENDPOINT" -H "Authorization: Basic $LOCKBOT_AUTH_TOKEN" --data-raw "{ \"name\": \"$LOCKBOT_ENV_NAME\", \"owner\": \"$LOCKBOT_API_OWNER\"}")
             if [ "$RESPONSE_CODE" -lt 299 ]; then
                 echo "Successfully locked."
-                echo "::set-output name=isLocked::${{ false }}"
+                echo "::set-output name=isLocked::false"
             else
                 echo "Failed to lock the environment."
                 echo "Response code was: $RESPONSE_CODE"
-                echo "::set-output name=isLocked::${{ true }}"
+                echo "::set-output name=isLocked::true"
             fi
         elif [ "$ENV_IS_LOCKED_TO_THIS_BRANCH" -gt 0 ]; then
             echo "Environment is already locked to this branch. Carrying on."
-            echo "::set-output name=isLocked::${{ false }}"
+            echo "::set-output name=isLocked::false"
         else
             echo "Environment is locked to another branch. Not going to deploy."
-            echo "::set-output name=isLocked::${{ true }}"
+            echo "::set-output name=isLocked::true"
         fi
         exit 1
