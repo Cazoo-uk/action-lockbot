@@ -14,4 +14,4 @@ jobs:
       - name: Check
         run: |
           npm install -g prettier
-          prettier --check action.yaml
+          prettier --check action.yml
