@@ -15,11 +15,6 @@ inputs:
     description: "Slack member ID"
     required: true
 
-outputs:
-  isLocked:
-    description: "Boolean value that says if the environment is locked by someone else"
-    value: ${{ steps.lock.outputs.isLocked }}
-
 runs:
   using: composite
   steps:
@@ -32,7 +27,6 @@ runs:
         GITHUB_BRANCH: ${{ github.ref_name }}
         GITHUB_ACTOR: ${{ github.actor }}
         LOCKBOT_API_OWNER: ${{ inputs.lockbot_api_owner }}
-      id: lock
       run: |
         LOCKBOT_ENV_NAME="${ENV_NAME}-${GITHUB_BRANCH}||${GITHUB_ACTOR}"
         LOCKBOT_ENV_NAME_NO_ACTOR="${ENV_NAME}-${GITHUB_BRANCH}"
@@ -55,16 +49,16 @@ runs:
             RESPONSE_CODE=$(curl --silent --output /dev/stderr --write-out "%{http_code}" "$LOCKBOT_ENDPOINT" -H "Authorization: Basic $LOCKBOT_AUTH_TOKEN" --data-raw "{ \"name\": \"$LOCKBOT_ENV_NAME\", \"owner\": \"$LOCKBOT_API_OWNER\"}")
             if [ "$RESPONSE_CODE" -lt 299 ]; then
                 echo "Successfully locked."
-                echo "::set-output name=isLocked::false"
+                exit 0
             else
                 echo "Failed to lock the environment."
                 echo "Response code was: $RESPONSE_CODE"
-                echo "::set-output name=isLocked::true"
+                exit 1
             fi
         elif [ "$ENV_IS_LOCKED_TO_THIS_BRANCH" -gt 0 ]; then
             echo "Environment is already locked to this branch. Carrying on."
-            echo "::set-output name=isLocked::false"
+            exit 0
         else
             echo "Environment is locked to another branch. Not going to deploy."
-            echo "::set-output name=isLocked::true"
+            exit 1
         fi
