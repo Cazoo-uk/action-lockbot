@@ -1,0 +1,70 @@
+name: Check and acquire Lockbot
+description: Check and acquire Lockbot
+
+inputs:
+  env:
+    description: "Environment"
+    required: true
+  lockbot_endpoint:
+    description: "Lockbot endpoint"
+    required: true
+  lockbot_auth_token:
+    description: "Lockbot Auth Token"
+    required: true
+  lockbot_api_owner: 
+    description: "Slack member ID"
+
+outputs:
+  isLocked:
+    description: "Boolean value that says if the environment is locked by someone else"
+    value: ${{ steps.lock.outputs.isLocked }}
+
+runs:
+  using: composite
+  steps:
+    - name: Is this environment locked?
+      shell: bash
+      env:
+        ENV_NAME: ${{ github.repository }}-${{ inputs.env }}
+        LOCKBOT_ENDPOINT: ${{ inputs.lockbot_endpoint }}
+        LOCKBOT_AUTH_TOKEN: ${{ inputs.lockbot_auth_token }}
+        GITHUB_BRANCH: ${{ github.ref_name }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        LOCKBOT_API_OWNER: ${{ inputs.lockbot_api_owner }}
+      id: lock
+      run: |
+        LOCKBOT_ENV_NAME="${ENV_NAME}-${GITHUB_BRANCH}||${GITHUB_ACTOR}"
+        LOCKBOT_ENV_NAME_NO_ACTOR="${ENV_NAME}-${GITHUB_BRANCH}"
+        echo $ENV_NAME
+        echo $LOCKBOT_ENV_NAME
+        echo $LOCKBOT_ENV_NAME_NO_ACTOR
+
+
+        ALL_LOCKS=$(curl "$LOCKBOT_ENDPOINT" -H "Authorization: Basic $LOCKBOT_AUTH_TOKEN")
+        ENV_IS_LOCKED=$(echo "$ALL_LOCKS" | jq "[.[] | select(.name|test(\"^$ENV_NAME\"))] | length")
+        ENV_IS_LOCKED_TO_THIS_BRANCH=$(echo "$ALL_LOCKS" | jq "[.[] | select(.name | split(\"||\") | .[0]==\"$LOCKBOT_ENV_NAME_NO_ACTOR\")] | length")
+
+        echo "Lockbot response was:"
+        echo "$ALL_LOCKS" | jq
+        echo "ENV_IS_LOCKED: $ENV_IS_LOCKED"
+        echo "ENV_IS_LOCKED_TO_THIS_BRANCH: $ENV_IS_LOCKED_TO_THIS_BRANCH"
+        if [ "$ENV_IS_LOCKED" -eq 0 ]; then
+            echo "Environment not locked. Going to lock it now."
+            RESPONSE_CODE=$(curl --silent --output /dev/stderr --write-out "%{http_code}" "$LOCKBOT_ENDPOINT" -H "Authorization: Basic $LOCKBOT_AUTH_TOKEN" --data-raw "{ \"name\": \"$LOCKBOT_ENV_NAME\", \"owner\": \"$LOCKBOT_API_OWNER\"}")
+            if [ "$RESPONSE_CODE" -lt 299 ]; then
+                echo "Successfully locked."
+                echo "::set-output name=isLocked::false"
+            else
+                echo "Failed to lock the environment."
+                echo "Response code was: $RESPONSE_CODE"
+                echo "::set-output name=isLocked::true"
+            fi
+        elif [ "$ENV_IS_LOCKED_TO_THIS_BRANCH" -gt 0 ]; then
+            echo "Environment is already locked to this branch. Carrying on."
+            echo "::set-output name=isLocked::false"
+        else
+            echo "Environment is locked to another branch. Not going to deploy."
+            echo "::set-output name=isLocked::true"
+        fi
+        exit 1
+
