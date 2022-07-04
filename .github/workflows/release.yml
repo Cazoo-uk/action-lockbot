@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published, edited]
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    name: Create Release
+    env:
+      GITHUB_TOKEN: ${{ secrets.CAZOO_READ_REPO_TOKEN }}
+    steps:
+      - uses: rymndhng/release-on-push-action@177dbe7049eb049501bbdd5dd28a763ab721f183
+        with:
+          bump_version_scheme: norelease
+
+  update-major-tag:
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    name: Update Major Tag
+    steps:
+      - uses: Actions-R-Us/actions-tagger@f411bd910a5ad370d4511517e3eac7ff887c90ea
