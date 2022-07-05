@@ -25,7 +25,7 @@ runs:
   using: composite
   steps:
     - name: Release lock
-      if: ${{ inputs.action == "release" }}
+      if: inputs.action == 'release'
       env:
         ENV_NAME: ${{ github.event.repository.name }}-${{ inputs.env }}
         LOCKBOT_ENDPOINT: ${{ inputs.endpoint }}
@@ -47,7 +47,7 @@ runs:
         fi
 
     - name: Acquire lock
-      if: ${{ inputs.action == "acquire" }}
+      if: inputs.action == 'acquire'
       env:
         ENV_NAME: ${{ github.event.repository.name }}-${{ inputs.env }}
         LOCKBOT_ENDPOINT: ${{ inputs.endpoint }}
