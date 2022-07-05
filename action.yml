@@ -18,7 +18,7 @@ inputs:
     description: Lockbot Auth Token
     required: true
   api_owner:
-    description: Slack member ID
+    description: Slack member Id
     required: true
 
 runs:
