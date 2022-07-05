@@ -33,7 +33,7 @@ runs:
         GITHUB_ACTOR: ${{ github.actor }}
       shell: bash
       run: |
-        LOCKBOT_ENV_NAME="${ENV_NAME}||${GITHUB_ACTOR}"
+        LOCKBOT_ENV_NAME=$(echo -n "${ENV_NAME}||${GITHUB_ACTOR}" | jq -srR @uri)
         echo "LOCKBOT_ENV_NAME: $LOCKBOT_ENV_NAME"
 
         RESPONSE_CODE=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X DELETE "$LOCKBOT_ENDPOINT/$LOCKBOT_ENV_NAME" -H "Authorization: Basic $LOCKBOT_AUTH_TOKEN")
