@@ -1,49 +1,71 @@
-name: Check and acquire Lockbot
-description: Check and acquire Lockbot
+name: Lockbot action
+description: Releases or acquires lock
 
 inputs:
+  action:
+    type: choice
+    description: Lockbot locking action (release or acquire)
+    options:
+      - acquire
+      - release
   env:
-    description: "Environment"
+    description: Environment
     required: true
-  lockbot_endpoint:
-    description: "Lockbot endpoint"
+  endpoint:
+    description: Lockbot endpoint
     required: true
-  lockbot_auth_token:
-    description: "Lockbot Auth Token"
+  auth_token:
+    description: Lockbot Auth Token
     required: true
-  lockbot_api_owner:
-    description: "Slack member ID"
+  api_owner:
+    description: Slack member ID
     required: true
+
+env:
+  ENV_NAME: ${{ github.event.repository.name }}-${{ inputs.env }}
+  LOCKBOT_ENDPOINT: ${{ inputs.lockbot_endpoint }}
+  LOCKBOT_AUTH_TOKEN: ${{ inputs.lockbot_auth_token }}
+  GITHUB_ACTOR: ${{ github.actor }}
+  LOCKBOT_API_OWNER: ${{ inputs.lockbot_api_owner }}
 
 runs:
   using: composite
   steps:
-    - name: Is this environment locked?
+    - name: Release lock
+      if: inputs.action == "release"
       shell: bash
-      env:
-        ENV_NAME: ${{ github.repository }}-${{ inputs.env }}
-        LOCKBOT_ENDPOINT: ${{ inputs.lockbot_endpoint }}
-        LOCKBOT_AUTH_TOKEN: ${{ inputs.lockbot_auth_token }}
-        GITHUB_BRANCH: ${{ github.ref_name }}
-        GITHUB_ACTOR: ${{ github.actor }}
-        LOCKBOT_API_OWNER: ${{ inputs.lockbot_api_owner }}
       run: |
-        LOCKBOT_ENV_NAME="${ENV_NAME}-${GITHUB_BRANCH}||${GITHUB_ACTOR}"
-        LOCKBOT_ENV_NAME_NO_ACTOR="${ENV_NAME}-${GITHUB_BRANCH}"
-        echo $ENV_NAME
-        echo $LOCKBOT_ENV_NAME
-        echo $LOCKBOT_ENV_NAME_NO_ACTOR
+        LOCKBOT_ENV_NAME="${ENV_NAME}||${GITHUB_ACTOR}"
+        echo "LOCKBOT_ENV_NAME: $LOCKBOT_ENV_NAME"
 
+        RESPONSE_CODE=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X DELETE "$LOCKBOT_ENDPOINT/$LOCKBOT_ENV_NAME" -H "Authorization: Basic $LOCKBOT_AUTH_TOKEN")
+        if [ "$RESPONSE_CODE" -lt 299 ]; then
+            echo "Successfully unlocked."
+            exit 0
+        else
+            echo "Failed to unlock the environment."
+            echo "Response code was: $RESPONSE_CODE"
+            exit 1
+        fi
+
+    - name: Is this environment locked?
+      if: inputs.action == "acquire"
+      shell: bash
+      run: |
+        LOCKBOT_ENV_NAME="${ENV_NAME}||${GITHUB_ACTOR}"
+        echo "LOCKBOT_ENV_NAME: $LOCKBOT_ENV_NAME"
 
         ALL_LOCKS=$(curl "$LOCKBOT_ENDPOINT" -H "Authorization: Basic $LOCKBOT_AUTH_TOKEN")
-        echo $ALL_LOCKS
+
+        echo "ALL_LOCKS: $ALL_LOCKS"
+
         ENV_IS_LOCKED=$(echo "$ALL_LOCKS" | jq "[.[] | select(.name|test(\"^$ENV_NAME\"))] | length")
-        ENV_IS_LOCKED_TO_THIS_BRANCH=$(echo "$ALL_LOCKS" | jq "[.[] | select(.name | split(\"||\") | .[0]==\"$LOCKBOT_ENV_NAME_NO_ACTOR\")] | length")
+        ENV_IS_LOCKED_TO_THIS_USER=$(echo "$ALL_LOCKS" | jq "[.[] | select(.name | .[0]==\"$LOCKBOT_ENV_NAME\")] | length")
 
         echo "Lockbot response was:"
         echo "$ALL_LOCKS" | jq
         echo "ENV_IS_LOCKED: $ENV_IS_LOCKED"
-        echo "ENV_IS_LOCKED_TO_THIS_BRANCH: $ENV_IS_LOCKED_TO_THIS_BRANCH"
+        echo "ENV_IS_LOCKED_TO_THIS_USER: $ENV_IS_LOCKED_TO_THIS_USER"
         if [ "$ENV_IS_LOCKED" -eq 0 ]; then
             echo "Environment not locked. Going to lock it now."
             RESPONSE_CODE=$(curl --silent --output /dev/stderr --write-out "%{http_code}" "$LOCKBOT_ENDPOINT" -H "Authorization: Basic $LOCKBOT_AUTH_TOKEN" --data-raw "{ \"name\": \"$LOCKBOT_ENV_NAME\", \"owner\": \"$LOCKBOT_API_OWNER\"}")
@@ -55,10 +77,10 @@ runs:
                 echo "Response code was: $RESPONSE_CODE"
                 exit 1
             fi
-        elif [ "$ENV_IS_LOCKED_TO_THIS_BRANCH" -gt 0 ]; then
-            echo "Environment is already locked to this branch. Carrying on."
+        elif [ "$ENV_IS_LOCKED_TO_THIS_USER" -gt 0 ]; then
+            echo "Environment is already locked to this user. Carrying on."
             exit 0
         else
-            echo "Environment is locked to another branch. Not going to deploy."
+            echo "Environment is locked to another user. Not going to deploy."
             exit 1
         fi
