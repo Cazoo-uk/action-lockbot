@@ -21,18 +21,17 @@ inputs:
     description: Slack member ID
     required: true
 
-env:
-  ENV_NAME: ${{ github.event.repository.name }}-${{ inputs.env }}
-  LOCKBOT_ENDPOINT: ${{ inputs.lockbot_endpoint }}
-  LOCKBOT_AUTH_TOKEN: ${{ inputs.lockbot_auth_token }}
-  GITHUB_ACTOR: ${{ github.actor }}
-  LOCKBOT_API_OWNER: ${{ inputs.lockbot_api_owner }}
-
 runs:
   using: composite
+  env:
+    ENV_NAME: ${{ github.event.repository.name }}-${{ inputs.env }}
+    LOCKBOT_ENDPOINT: ${{ inputs.lockbot_endpoint }}
+    LOCKBOT_AUTH_TOKEN: ${{ inputs.lockbot_auth_token }}
+    GITHUB_ACTOR: ${{ github.actor }}
+    LOCKBOT_API_OWNER: ${{ inputs.lockbot_api_owner }}
   steps:
     - name: Release lock
-      if: inputs.action == "release"
+      if: ${{ inputs.action == "release" }}
       shell: bash
       run: |
         LOCKBOT_ENV_NAME="${ENV_NAME}||${GITHUB_ACTOR}"
@@ -48,8 +47,8 @@ runs:
             exit 1
         fi
 
-    - name: Is this environment locked?
-      if: inputs.action == "acquire"
+    - name: Acquire lock
+      if: ${{ inputs.action == "acquire" }}
       shell: bash
       run: |
         LOCKBOT_ENV_NAME="${ENV_NAME}||${GITHUB_ACTOR}"
