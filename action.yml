@@ -64,7 +64,7 @@ runs:
         echo "ALL_LOCKS: $ALL_LOCKS"
 
         ENV_IS_LOCKED=$(echo "$ALL_LOCKS" | jq "[.[] | select(.name|test(\"^$ENV_NAME\"))] | length")
-        ENV_IS_LOCKED_TO_THIS_USER=$(echo "$ALL_LOCKS" | jq "[.[] | select(.name | .[0]==\"$LOCKBOT_ENV_NAME\")] | length")
+        ENV_IS_LOCKED_TO_THIS_USER=$(echo "$ALL_LOCKS" | jq --arg key "$LOCKBOT_ENV_NAME" '[.[] | select(.name==$key)] | length')
 
         echo "Lockbot response was:"
         echo "$ALL_LOCKS" | jq
