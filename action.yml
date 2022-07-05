@@ -23,15 +23,14 @@ inputs:
 
 runs:
   using: composite
-  env:
-    ENV_NAME: ${{ github.event.repository.name }}-${{ inputs.env }}
-    LOCKBOT_ENDPOINT: ${{ inputs.lockbot_endpoint }}
-    LOCKBOT_AUTH_TOKEN: ${{ inputs.lockbot_auth_token }}
-    GITHUB_ACTOR: ${{ github.actor }}
-    LOCKBOT_API_OWNER: ${{ inputs.lockbot_api_owner }}
   steps:
     - name: Release lock
       if: ${{ inputs.action == "release" }}
+      env:
+        ENV_NAME: ${{ github.event.repository.name }}-${{ inputs.env }}
+        LOCKBOT_ENDPOINT: ${{ inputs.endpoint }}
+        LOCKBOT_AUTH_TOKEN: ${{ inputs.auth_token }}
+        GITHUB_ACTOR: ${{ github.actor }}
       shell: bash
       run: |
         LOCKBOT_ENV_NAME="${ENV_NAME}||${GITHUB_ACTOR}"
@@ -49,6 +48,12 @@ runs:
 
     - name: Acquire lock
       if: ${{ inputs.action == "acquire" }}
+      env:
+        ENV_NAME: ${{ github.event.repository.name }}-${{ inputs.env }}
+        LOCKBOT_ENDPOINT: ${{ inputs.endpoint }}
+        LOCKBOT_AUTH_TOKEN: ${{ inputs.auth_token }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        LOCKBOT_API_OWNER: ${{ inputs.api_owner }}
       shell: bash
       run: |
         LOCKBOT_ENV_NAME="${ENV_NAME}||${GITHUB_ACTOR}"
